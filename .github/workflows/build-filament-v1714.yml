@@ -79,8 +79,10 @@ jobs:
           set -euxo pipefail
           cd "$FILAMENT_DIR"
           NDK_VERSION="$(sed -n 's/^GITHUB_NDK_VERSION=//p' build/common/versions)"
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$NDK_VERSION"
+          # sdkmanager may close stdin after accepting enough licenses.
+          # With pipefail enabled, `yes` can report Broken pipe; that is not a real failure.
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$NDK_VERSION"
           echo "FILAMENT_NDK_VERSION=$NDK_VERSION" >> "$GITHUB_ENV"
 
       - name: Build Android arm64-v8a release proof
