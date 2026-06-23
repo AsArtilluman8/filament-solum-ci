@@ -1,0 +1,128 @@
+name: Filament v1.71.4 Android arm64 proof
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build-filament-android-arm64:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    env:
+      FILAMENT_TAG: v1.71.4
+      FILAMENT_DIR: filament-src
+      LOG_DIR: filament-ci-logs
+
+    steps:
+      - name: Checkout wrapper repository
+        uses: actions/checkout@v4
+
+      - name: Checkout google/filament v1.71.4
+        uses: actions/checkout@v4
+        with:
+          repository: google/filament
+          ref: ${{ env.FILAMENT_TAG }}
+          path: ${{ env.FILAMENT_DIR }}
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install host dependencies
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang \
+            cmake \
+            git \
+            libc++-dev \
+            libc++abi-dev \
+            libglu1-mesa-dev \
+            ninja-build \
+            pkg-config \
+            zip
+
+      - name: Inspect Filament Android route
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p "$LOG_DIR"
+          {
+            cd "$FILAMENT_DIR"
+            git rev-parse HEAD
+            git describe --tags --always
+            java -version
+            cmake --version
+            ninja --version
+            ./build.sh -h || true
+            sed -n '1,180p' android/build.gradle
+            sed -n '1,180p' build/android/build.sh
+            cat build/common/versions
+          } 2>&1 | tee "$LOG_DIR/route-inspection.log"
+
+      - name: Install Filament requested Android NDK
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd "$FILAMENT_DIR"
+          NDK_VERSION="$(sed -n 's/^GITHUB_NDK_VERSION=//p' build/common/versions)"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$NDK_VERSION"
+          echo "FILAMENT_NDK_VERSION=$NDK_VERSION" >> "$GITHUB_ENV"
+
+      - name: Build Android arm64-v8a release proof
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p "$LOG_DIR"
+          cd "$FILAMENT_DIR"
+          echo "Running: FILAMENT_NDK_VERSION=$FILAMENT_NDK_VERSION ./build.sh -p android -q arm64-v8a -i release"
+          FILAMENT_NDK_VERSION="$FILAMENT_NDK_VERSION" ./build.sh -p android -q arm64-v8a -i release \
+            2>&1 | tee "../$LOG_DIR/build-android-arm64-release.log"
+
+      - name: Collect produced artifacts
+        if: always()
+        shell: bash
+        run: |
+          set -euxo pipefail
+          ARTIFACT_DIR="filament-ci-artifacts"
+          mkdir -p "$ARTIFACT_DIR/logs" "$ARTIFACT_DIR/aars" "$ARTIFACT_DIR/native" "$ARTIFACT_DIR/tools"
+          cp -R "$LOG_DIR"/. "$ARTIFACT_DIR/logs/" || true
+          find "$FILAMENT_DIR" -type f -path '*/build/outputs/aar/*.aar' -print -exec cp -v {} "$ARTIFACT_DIR/aars/" \; || true
+          find "$FILAMENT_DIR/out" -type f -name '*.aar' -print -exec cp -v {} "$ARTIFACT_DIR/aars/" \; || true
+          find "$FILAMENT_DIR" -type f -path '*/arm64-v8a/*.so' -print -exec cp -v {} "$ARTIFACT_DIR/native/" \; || true
+          find "$FILAMENT_DIR/out" -type f -name matc -print -exec cp -v {} "$ARTIFACT_DIR/tools/" \; || true
+          find "$ARTIFACT_DIR" -type f -print | sort | tee "$ARTIFACT_DIR/artifact-manifest.txt"
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: filament-v1714-android-arm64-logs
+          path: filament-ci-artifacts/logs/**
+          if-no-files-found: warn
+
+      - name: Upload produced artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: filament-v1714-android-arm64-artifacts
+          path: |
+            filament-ci-artifacts/aars/**
+            filament-ci-artifacts/native/**
+            filament-ci-artifacts/tools/**
+            filament-ci-artifacts/artifact-manifest.txt
+          if-no-files-found: warn
