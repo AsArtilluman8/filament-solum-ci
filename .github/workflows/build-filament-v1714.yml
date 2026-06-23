@@ -91,7 +91,9 @@ jobs:
           set -o pipefail
           mkdir -p "$LOG_DIR"
           cd "$FILAMENT_DIR"
-          echo "Running: FILAMENT_NDK_VERSION=$FILAMENT_NDK_VERSION ./build.sh -p android -q arm64-v8a -i release"
+          echo "Running with clang: FILAMENT_NDK_VERSION=$FILAMENT_NDK_VERSION ./build.sh -p android -q arm64-v8a -i release"
+          export CC=clang
+          export CXX=clang++
           FILAMENT_NDK_VERSION="$FILAMENT_NDK_VERSION" ./build.sh -p android -q arm64-v8a -i release \
             2>&1 | tee "../$LOG_DIR/build-android-arm64-release.log"
 
