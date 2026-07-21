@@ -1,4 +1,4 @@
-name: Yoru Drift Extra Stock Fetch
+name: Yoru Drift Director Cut Stock Fetch
 
 on:
   push:
@@ -7,27 +7,35 @@ on:
   workflow_dispatch:
 
 jobs:
-  fetch-extra:
+  fetch-directors-cut:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
-      - name: Download additional licensed Pexels footage
+      - name: Download additional licensed Pexels road and drift footage
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p extra
-          curl -L --fail --retry 4 --retry-delay 2 -o extra/07_graffiti_tunnel.mp4 "https://www.pexels.com/download/video/35330807/"
-          curl -L --fail --retry 4 --retry-delay 2 -o extra/08_illuminated_tunnel_drive.mp4 "https://www.pexels.com/download/video/36946661/"
-          curl -L --fail --retry 4 --retry-delay 2 -o extra/09_custom_car_rear_night.mp4 "https://www.pexels.com/download/video/30418729/"
-          curl -L --fail --retry 4 --retry-delay 2 -o extra/10_mountain_road_sports_car.mp4 "https://www.pexels.com/download/video/36223788/"
+          mkdir -p directors_cut
+          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/11_mountain_drift_white_car.mp4 "https://www.pexels.com/download/video/36223826/"
+          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/12_two_cars_drift_track.mp4 "https://www.pexels.com/download/video/9330847/"
+          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/13_orange_nissan_drift.mp4 "https://www.pexels.com/download/video/14854561/"
+          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/14_drift_through_smoke.mp4 "https://www.pexels.com/download/video/26202701/"
+          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/15_black_bmw_drift.mp4 "https://www.pexels.com/download/video/28545969/"
+          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/16_night_highway_city_lights.mp4 "https://www.pexels.com/download/video/35677223/"
+          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/17_high_speed_tunnel.mp4 "https://www.pexels.com/download/video/31196468/"
+          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/18_speeding_city_night.mp4 "https://www.pexels.com/download/video/31196474/"
+          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/19_japanese_night_traffic.mp4 "https://www.pexels.com/download/video/29215132/"
+          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/20_highway_passing_cars.mp4 "https://www.pexels.com/download/video/31940329/"
+          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/21_black_car_mountain_roads.mp4 "https://www.pexels.com/download/video/32486198/"
+          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/22_night_road_timelapse.mp4 "https://www.pexels.com/download/video/27758000/"
           printf '%s\n' \
-            'Pexels source IDs: 35330807, 36946661, 30418729, 36223788' \
-            'License: https://www.pexels.com/license/' > extra/SOURCES_EXTRA.txt
-          ls -lh extra
-      - name: Upload extra stock bundle
+            'Pexels source IDs: 36223826, 9330847, 14854561, 26202701, 28545969, 35677223, 31196468, 31196474, 29215132, 31940329, 32486198, 27758000' \
+            'License: https://www.pexels.com/license/' > directors_cut/SOURCES_DIRECTORS_CUT.txt
+          ls -lh directors_cut
+      - name: Upload directors cut stock bundle
         uses: actions/upload-artifact@v4
         with:
-          name: yoru-drift-extra
-          path: extra/
+          name: yoru-drift-directors-cut-stock
+          path: directors_cut/
           compression-level: 0
           retention-days: 1
