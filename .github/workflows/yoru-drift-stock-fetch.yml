@@ -1,0 +1,35 @@
+name: Yoru Drift Stock Fetch
+
+on:
+  push:
+    branches:
+      - agent/yoru-drift-stock-fetch
+  workflow_dispatch:
+
+jobs:
+  fetch-stock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Download licensed Pexels footage
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stock
+          curl -L --fail --retry 4 --retry-delay 2 -o stock/01_night_drift_vertical.mp4 "https://videos.pexels.com/video-files/35099114/14869804_2160_3840_32fps.mp4"
+          curl -L --fail --retry 4 --retry-delay 2 -o stock/02_smoke_drift_vertical.mp4 "https://videos.pexels.com/video-files/35078242/14859709_2160_3840_30fps.mp4"
+          curl -L --fail --retry 4 --retry-delay 2 -o stock/03_night_drive_neon.mp4 "https://videos.pexels.com/video-files/19058370/19058370-hd_1920_1080_24fps.mp4"
+          curl -L --fail --retry 4 --retry-delay 2 -o stock/04_tokyo_neon_street.mp4 "https://videos.pexels.com/video-files/32979943/14055965_4096_2160_25fps.mp4"
+          curl -L --fail --retry 4 --retry-delay 2 -o stock/05_red_sports_car_speed.mp4 "https://videos.pexels.com/video-files/29498801/12698140_4070_2160_24fps.mp4"
+          curl -L --fail --retry 4 --retry-delay 2 -o stock/06_neon_tattoo_portrait.mp4 "https://videos.pexels.com/video-files/34225479/14505143_3840_2160_25fps.mp4"
+          printf '%s\n' \
+            'Pexels source IDs: 35099114, 35078242, 19058370, 32979943, 29498801, 34225479' \
+            'License: https://www.pexels.com/license/' > stock/SOURCES.txt
+          ls -lh stock
+      - name: Upload stock bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: yoru-drift-stock
+          path: stock/
+          compression-level: 0
+          retention-days: 1
