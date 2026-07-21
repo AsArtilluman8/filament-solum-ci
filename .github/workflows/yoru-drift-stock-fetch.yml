@@ -25,14 +25,18 @@ jobs:
           curl -L --fail --retry 4 --retry-delay 2 -o stock/04_tokyo_neon_street.mp4 "https://videos.pexels.com/video-files/32979943/14055965_4096_2160_25fps.mp4"
           curl -L --fail --retry 4 --retry-delay 2 -o stock/05_red_sports_car_speed.mp4 "https://videos.pexels.com/video-files/29498801/12698140_4070_2160_24fps.mp4"
           curl -L --fail --retry 4 --retry-delay 2 -o stock/06_neon_tattoo_portrait.mp4 "https://videos.pexels.com/video-files/34225479/14505143_3840_2160_25fps.mp4"
+          curl -L --fail --retry 4 --retry-delay 2 -o stock/07_graffiti_tunnel.mp4 "https://www.pexels.com/download/video/35330807/"
+          curl -L --fail --retry 4 --retry-delay 2 -o stock/08_illuminated_tunnel_drive.mp4 "https://www.pexels.com/download/video/36946661/"
+          curl -L --fail --retry 4 --retry-delay 2 -o stock/09_custom_car_rear_night.mp4 "https://www.pexels.com/download/video/30418729/"
+          curl -L --fail --retry 4 --retry-delay 2 -o stock/10_mountain_road_sports_car.mp4 "https://www.pexels.com/download/video/36223788/"
           printf '%s\n' \
-            'Pexels source IDs: 35099114, 35078242, 19058370, 32979943, 29498801, 34225479' \
+            'Pexels source IDs: 35099114, 35078242, 19058370, 32979943, 29498801, 34225479, 35330807, 36946661, 30418729, 36223788' \
             'License: https://www.pexels.com/license/' > stock/SOURCES.txt
           ls -lh stock
       - name: Upload stock bundle
         uses: actions/upload-artifact@v4
         with:
-          name: yoru-drift-stock
+          name: yoru-drift-stock-extended
           path: stock/
           compression-level: 0
           retention-days: 1
