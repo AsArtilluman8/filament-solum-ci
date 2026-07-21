@@ -12,29 +12,54 @@ on:
 jobs:
   fetch-directors-cut:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
-      - name: Download additional licensed Pexels road and drift footage
+      - name: Download and compress licensed Pexels road and drift footage
         shell: bash
         run: |
-          set -euo pipefail
-          mkdir -p directors_cut
-          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/11_mountain_drift_white_car.mp4 "https://www.pexels.com/download/video/36223826/"
-          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/12_two_cars_drift_track.mp4 "https://www.pexels.com/download/video/9330847/"
-          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/13_orange_nissan_drift.mp4 "https://www.pexels.com/download/video/14854561/"
-          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/14_drift_through_smoke.mp4 "https://www.pexels.com/download/video/26202701/"
-          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/15_black_bmw_drift.mp4 "https://www.pexels.com/download/video/28545969/"
-          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/16_night_highway_city_lights.mp4 "https://www.pexels.com/download/video/35677223/"
-          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/17_high_speed_tunnel.mp4 "https://www.pexels.com/download/video/31196468/"
-          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/18_speeding_city_night.mp4 "https://www.pexels.com/download/video/31196474/"
-          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/19_japanese_night_traffic.mp4 "https://www.pexels.com/download/video/29215132/"
-          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/20_highway_passing_cars.mp4 "https://www.pexels.com/download/video/31940329/"
-          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/21_black_car_mountain_roads.mp4 "https://www.pexels.com/download/video/32486198/"
-          curl -L --fail --retry 4 --retry-delay 2 -o directors_cut/22_night_road_timelapse.mp4 "https://www.pexels.com/download/video/27758000/"
+          set -u
+          mkdir -p directors_cut raw
+
+          fetch_clip() {
+            local file="$1"
+            local id="$2"
+            echo "Fetching Pexels $id -> $file"
+            if ! curl -L --fail --retry 4 --retry-delay 2 -o "raw/$file" "https://www.pexels.com/download/video/$id/"; then
+              echo "SKIP: download failed for $id"
+              rm -f "raw/$file"
+              return 0
+            fi
+            if ! ffmpeg -hide_banner -loglevel error -y -i "raw/$file" -an \
+              -vf "scale=1280:1280:force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2,fps=30" \
+              -c:v libx264 -preset veryfast -crf 21 -pix_fmt yuv420p -movflags +faststart \
+              "directors_cut/$file"; then
+              echo "SKIP: encode failed for $id"
+              rm -f "directors_cut/$file"
+            fi
+            rm -f "raw/$file"
+          }
+
+          fetch_clip 11_mountain_drift_white_car.mp4 36223826
+          fetch_clip 12_two_cars_drift_track.mp4 9330847
+          fetch_clip 13_orange_nissan_drift.mp4 14854561
+          fetch_clip 15_black_bmw_drift.mp4 28545969
+          fetch_clip 16_night_highway_city_lights.mp4 35677223
+          fetch_clip 17_high_speed_tunnel.mp4 31196468
+          fetch_clip 18_speeding_city_night.mp4 31196474
+          fetch_clip 19_japanese_night_traffic.mp4 29215132
+          fetch_clip 20_highway_passing_cars.mp4 31940329
+          fetch_clip 21_black_car_mountain_roads.mp4 32486198
+          fetch_clip 22_night_road_timelapse.mp4 27758000
+          fetch_clip 23_dynamic_tunnel.mp4 31196469
+          fetch_clip 24_tunnel_cars.mp4 27288183
+          fetch_clip 25_curved_empty_tunnel.mp4 31576430
+
           printf '%s\n' \
-            'Pexels source IDs: 36223826, 9330847, 14854561, 26202701, 28545969, 35677223, 31196468, 31196474, 29215132, 31940329, 32486198, 27758000' \
+            'Pexels source IDs: 36223826, 9330847, 14854561, 28545969, 35677223, 31196468, 31196474, 29215132, 31940329, 32486198, 27758000, 31196469, 27288183, 31576430' \
             'License: https://www.pexels.com/license/' > directors_cut/SOURCES_DIRECTORS_CUT.txt
           ls -lh directors_cut
+          test "$(find directors_cut -name '*.mp4' | wc -l)" -ge 6
+
       - name: Upload directors cut stock bundle
         uses: actions/upload-artifact@v4
         with:
