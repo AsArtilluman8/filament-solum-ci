@@ -12,8 +12,13 @@ on:
 jobs:
   fetch-directors-cut:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     steps:
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+
       - name: Download and compress licensed Pexels road and drift footage
         shell: bash
         run: |
