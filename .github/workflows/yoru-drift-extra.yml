@@ -1,0 +1,33 @@
+name: Yoru Drift Extra Stock Fetch
+
+on:
+  push:
+    branches:
+      - agent/yoru-drift-stock-fetch
+  workflow_dispatch:
+
+jobs:
+  fetch-extra:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Download additional licensed Pexels footage
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p extra
+          curl -L --fail --retry 4 --retry-delay 2 -o extra/07_graffiti_tunnel.mp4 "https://www.pexels.com/download/video/35330807/"
+          curl -L --fail --retry 4 --retry-delay 2 -o extra/08_illuminated_tunnel_drive.mp4 "https://www.pexels.com/download/video/36946661/"
+          curl -L --fail --retry 4 --retry-delay 2 -o extra/09_custom_car_rear_night.mp4 "https://www.pexels.com/download/video/30418729/"
+          curl -L --fail --retry 4 --retry-delay 2 -o extra/10_mountain_road_sports_car.mp4 "https://www.pexels.com/download/video/36223788/"
+          printf '%s\n' \
+            'Pexels source IDs: 35330807, 36946661, 30418729, 36223788' \
+            'License: https://www.pexels.com/license/' > extra/SOURCES_EXTRA.txt
+          ls -lh extra
+      - name: Upload extra stock bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: yoru-drift-extra
+          path: extra/
+          compression-level: 0
+          retention-days: 1
