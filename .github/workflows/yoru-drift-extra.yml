@@ -1,4 +1,4 @@
-name: Yoru Drift Director Cut Stock Fetch
+name: Yoru Drift Street Culture Stock Fetch
 
 on:
   push:
@@ -10,65 +10,60 @@ on:
   workflow_dispatch:
 
 jobs:
-  fetch-directors-cut:
+  fetch-street-culture:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 45
     steps:
       - name: Install FFmpeg
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq ffmpeg
 
-      - name: Download and compress licensed Pexels road and drift footage
+      - name: Download and compress licensed Pexels street-culture footage
         shell: bash
         run: |
           set -u
-          mkdir -p directors_cut raw
+          mkdir -p street raw
 
           fetch_clip() {
             local file="$1"
             local id="$2"
             echo "Fetching Pexels $id -> $file"
-            if ! curl -L --fail --retry 4 --retry-delay 2 -o "raw/$file" "https://www.pexels.com/download/video/$id/"; then
+            if ! curl -L --fail --retry 4 --retry-delay 2 --max-time 600 -o "raw/$file" "https://www.pexels.com/download/video/$id/"; then
               echo "SKIP: download failed for $id"
               rm -f "raw/$file"
               return 0
             fi
-            if ! ffmpeg -hide_banner -loglevel error -y -i "raw/$file" -an \
+            if ! ffmpeg -hide_banner -loglevel error -y -t 16 -i "raw/$file" -an \
               -vf "scale=1280:1280:force_original_aspect_ratio=decrease,scale=trunc(iw/2)*2:trunc(ih/2)*2,fps=30" \
               -c:v libx264 -preset veryfast -crf 21 -pix_fmt yuv420p -movflags +faststart \
-              "directors_cut/$file"; then
+              "street/$file"; then
               echo "SKIP: encode failed for $id"
-              rm -f "directors_cut/$file"
+              rm -f "street/$file"
             fi
             rm -f "raw/$file"
           }
 
-          fetch_clip 11_mountain_drift_white_car.mp4 36223826
-          fetch_clip 12_two_cars_drift_track.mp4 9330847
-          fetch_clip 13_orange_nissan_drift.mp4 14854561
-          fetch_clip 15_black_bmw_drift.mp4 28545969
-          fetch_clip 16_night_highway_city_lights.mp4 35677223
-          fetch_clip 17_high_speed_tunnel.mp4 31196468
-          fetch_clip 18_speeding_city_night.mp4 31196474
-          fetch_clip 19_japanese_night_traffic.mp4 29215132
-          fetch_clip 20_highway_passing_cars.mp4 31940329
-          fetch_clip 21_black_car_mountain_roads.mp4 32486198
-          fetch_clip 22_night_road_timelapse.mp4 27758000
-          fetch_clip 23_dynamic_tunnel.mp4 31196469
-          fetch_clip 24_tunnel_cars.mp4 27288183
-          fetch_clip 25_curved_empty_tunnel.mp4 31576430
+          fetch_clip 26_night_skate_trick.mp4 8565343
+          fetch_clip 27_gritty_night_skate.mp4 5422532
+          fetch_clip 28_blue_night_skate.mp4 28985119
+          fetch_clip 29_car_meet_burnout.mp4 27974758
+          fetch_clip 30_neon_muscle_burnout.mp4 30843746
+          fetch_clip 31_tuned_cars_parking.mp4 30418725
+          fetch_clip 32_breakdance_spin.mp4 6548147
+          fetch_clip 33_breakdance_street_woman.mp4 8715155
+          fetch_clip 34_neon_friends_car.mp4 10385869
 
           printf '%s\n' \
-            'Pexels source IDs: 36223826, 9330847, 14854561, 28545969, 35677223, 31196468, 31196474, 29215132, 31940329, 32486198, 27758000, 31196469, 27288183, 31576430' \
-            'License: https://www.pexels.com/license/' > directors_cut/SOURCES_DIRECTORS_CUT.txt
-          ls -lh directors_cut
-          test "$(find directors_cut -name '*.mp4' | wc -l)" -ge 6
+            'Pexels source IDs: 8565343, 5422532, 28985119, 27974758, 30843746, 30418725, 6548147, 8715155, 10385869' \
+            'License: https://www.pexels.com/license/' > street/SOURCES_STREET.txt
+          ls -lh street
+          test "$(find street -name '*.mp4' | wc -l)" -ge 5
 
-      - name: Upload directors cut stock bundle
+      - name: Upload street culture stock bundle
         uses: actions/upload-artifact@v4
         with:
-          name: yoru-drift-directors-cut-stock
-          path: directors_cut/
+          name: yoru-drift-street-culture-stock
+          path: street/
           compression-level: 0
           retention-days: 1
