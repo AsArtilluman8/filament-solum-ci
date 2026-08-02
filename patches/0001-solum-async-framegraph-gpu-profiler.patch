@@ -681,6 +681,49 @@ index bc24473d4ff443dec2fe1868c754333d20aaa519..83822eeffd6e6c4d2a5b533ab72f3687
  
      /**
       * Forwards a resource to another one which gets replaced.
+diff --git a/filament/backend/src/vulkan/VulkanAsyncHandles.h b/filament/backend/src/vulkan/VulkanAsyncHandles.h
+index 7e99993..f8d2c07 100644
+--- a/filament/backend/src/vulkan/VulkanAsyncHandles.h
++++ b/filament/backend/src/vulkan/VulkanAsyncHandles.h
+@@ -249,2 +249,2 @@ struct VulkanTimerQuery : public HwTimerQuery, fvkmemory::ThreadSafeResource {
+-    bool isCompleted() noexcept {
++    std::shared_ptr<VulkanCmdFence> getCompletedFence() noexcept {
+         std::lock_guard const lock(mFenceMutex);
+@@ -256,3 +256,13 @@ struct VulkanTimerQuery : public HwTimerQuery, fvkmemory::ThreadSafeResource {
+         // This fence indicates that the corresponding buffer has been completed.
+-        return mFence && mFence->getStatus() == VK_SUCCESS;
++        return mFence && mFence->getStatus() == VK_SUCCESS ? mFence : nullptr;
++    }
++
++    void clearCompletedFence(std::shared_ptr<VulkanCmdFence> const& completedFence) noexcept {
++        std::lock_guard const lock(mFenceMutex);
++        // TimerQuery handles can be reused after AVAILABLE is consumed. Clear only the exact
++        // completed generation observed by the synchronous caller; never clear a newer fence
++        // that beginQuery may already have installed on the backend thread.
++        if (mFence == completedFence) {
++            mFence.reset();
++        }
+     }
+diff --git a/filament/backend/src/vulkan/VulkanDriver.cpp b/filament/backend/src/vulkan/VulkanDriver.cpp
+index 3b1447d..b87de97 100644
+--- a/filament/backend/src/vulkan/VulkanDriver.cpp
++++ b/filament/backend/src/vulkan/VulkanDriver.cpp
+@@ -1841,3 +1841,4 @@ TimerQueryResult VulkanDriver::getTimerQueryValue(Handle<HwTimerQuery> tqh, uint
+     auto vtq = resource_ptr<VulkanTimerQuery>::cast(&mResourceManager, tqh);
+-    if (!vtq->isCompleted()) {
++    auto const completedFence = vtq->getCompletedFence();
++    if (!completedFence) {
+         return TimerQueryResult::NOT_READY;
+@@ -1856,2 +1857,3 @@ TimerQueryResult VulkanDriver::getTimerQueryValue(Handle<HwTimerQuery> tqh, uint
+         *elapsedTime = 0;
++        vtq->clearCompletedFence(completedFence);
+         return TimerQueryResult::ERROR;
+@@ -1864,2 +1866,6 @@ TimerQueryResult VulkanDriver::getTimerQueryValue(Handle<HwTimerQuery> tqh, uint
+     *elapsedTime = uint64_t(float(end - begin) * period);
++    // AVAILABLE is a one-shot result. Without consuming the retained fence, a frontend caller
++    // that reuses this handle can observe the previous generation before the queued beginQuery
++    // installs the next fence and can incorrectly attribute an old duration to a new scope.
++    vtq->clearCompletedFence(completedFence);
+     return TimerQueryResult::AVAILABLE;
 -- 
 2.39.5
-
